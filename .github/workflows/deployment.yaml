@@ -1,0 +1,314 @@
+name: CI/CD Pipeline with Full Security Scanning
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+
+# =========================
+# ✅ BUILD STAGE
+# =========================
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ---------- FRONTEND ----------
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
+      # ---------- BACKEND ----------
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build Backend
+        run: |
+          cd backend
+          mvn clean install -DskipTests
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: .
+
+# =========================
+# ✅ SECURITY STAGE
+# =========================
+  security:
+    name: Security & Compliance
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # =========================
+      # ✅ SECRET SCANNING (GITLEAKS)
+      # =========================
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --redact
+
+      # =========================
+      # ✅ SAST (CODEQL - Java + JS)
+      # =========================
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java,javascript
+
+      # Build backend for CodeQL
+      - name: Build Backend
+        run: |
+          cd backend
+          mvn clean install -DskipTests
+
+      # Build frontend (helps JS analysis)
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      # =========================
+      # ✅ DEPENDENCY SCAN
+      # =========================
+      - name: Run Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "my-app"
+          path: "."
+          format: "HTML"
+          failOnCVSS: 7
+
+      # =========================
+      # ✅ RUN BACKEND (for API testing)
+      # =========================
+      - name: Start Backend
+        run: |
+          cd backend
+          mvn spring-boot:run &
+          sleep 25
+
+      # =========================
+      # ✅ RUN FRONTEND (PORT 80 FIX)
+      # =========================
+      - name: Start Frontend (port 3000 safer)
+        run: |
+          cd frontend
+          npm install
+          PORT=3000 npm start &
+          sleep 30
+
+      # =========================
+      # ✅ DAST (ZAP)
+      # =========================
+      - name: Run OWASP ZAP Scan (UI)
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: "http://localhost:3000"
+          fail_action: true
+
+      - name: Run OWASP ZAP Scan (API)
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: "http://localhost:8080"
+          fail_action: false   # optional (warnings only)
+
+      # =========================
+      # ✅ UPLOAD REPORTS
+      # =========================
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            report_html.html
+            reports/
+
+
+
+
+
+
+
+
+
+
+# name: CI/CD Pipeline with Full Security Scanning
+ 
+# on:
+#   push:
+#     branches: ["main"]
+#   # pull_request:
+ 
+# jobs:
+ 
+# # =========================
+# # ✅ BUILD STAGE
+# # =========================
+#   build:
+#     runs-on: ubuntu-latest
+ 
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+ 
+#       - name: Install Dependencies
+#         run: npm install
+ 
+#       - name: Build Application
+#         run: npm run build
+ 
+#       - name: Upload Build Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: app-build
+#           path: .
+ 
+# # =========================
+# # ✅ TEST STAGE
+# # =========================
+#   # test:
+#   #   runs-on: ubuntu-latest
+#   #   needs: build
+ 
+#   #   steps:
+#   #     - uses: actions/checkout@v4
+ 
+#   #     - name: Run Unit Tests
+#   #       run: npm test
+ 
+# # =========================
+# # ✅ SECURITY STAGE
+# # =========================
+#   security:
+#     name: Security & Compliance
+#     runs-on: ubuntu-latest
+#     # needs: test
+ 
+#     permissions:
+#       security-events: write
+ 
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+ 
+#       # =========================
+#       # ✅ SECRET SCANNING
+#       # Covers:
+#       # Hardcoded secrets, passwords, keys
+#       # =========================
+#       - name: Run Gitleaks
+#         uses: gitleaks/gitleaks-action@v2
+#         with:
+#           args: detect --redact
+ 
+#       # =========================
+#       # ✅ SAST (CodeQL)
+#       # Covers:
+#       # SQL Injection, XSS, command injection,
+#       # weak encryption, improper hashing,
+#       # insecure API usage, buffer overflow
+#       # =========================
+
+#       - name: Initialize CodeQL
+#         uses: github/codeql-action/init@v3
+#         with:
+#           languages: java   # change based on your project
+
+#       # Agar build required hai
+#       - name: Build Project
+#         run: mvn clean install -DskipTests
+
+#       - name: Autobuild (optional fallback)
+#         uses: github/codeql-action/autobuild@v3
+
+#       - name: Perform CodeQL Analysis
+#         uses: github/codeql-action/analyze@v3
+      
+ 
+#       # =========================
+#       # ✅ DEPENDENCY SCAN
+#       # Covers:
+#       # Vulnerable libraries (CVE)
+#       # =========================
+#       - name: Run Dependency Check
+#         uses: dependency-check/Dependency-Check_Action@main
+#         with:
+#           project: "my-app"
+#           path: "."
+#           format: "HTML"
+#           failOnCVSS: 7
+ 
+#       # =========================
+#       # ✅ START APPLICATION (for DAST)
+#       # =========================
+#       - name: Start Application
+#         run: |
+#           npm install
+#           npm start &
+#           sleep 25
+ 
+#       # =========================
+#       # ✅ DAST (OWASP ZAP)
+#       # Covers:
+#       # XSS, Insecure API, missing auth,
+#       # RBAC violations, headers, runtime issues
+#       # =========================
+#       - name: Run OWASP ZAP Scan
+#         uses: zaproxy/action-baseline@v0.10.0
+#         with:
+#           target: "http://localhost:3000"
+#           fail_action: true
+ 
+#       # =========================
+#       # ✅ Upload Reports
+#       # =========================
+#       - name: Upload Security Reports
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: security-reports
+#           path: |
+#             report_html.html
+#             reports/
+ 
+# # =========================
+# # ✅ DEPLOY STAGE
+# # =========================
+#   # deploy:
+#   #   runs-on: ubuntu-latest
+#   #   needs: security
+ 
+#   #   steps:
+#   #     - name: Deploy Application
+#   #       run: echo "Deploying application securely..."
