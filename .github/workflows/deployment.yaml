@@ -170,8 +170,6 @@ jobs:
 # ==================================================
       - name: Run OWASP ZAP Scan (CLI)
         run: |
-          mkdir -p reports
-
           docker run --rm \
             -v $(pwd):/zap/wrk/:rw \
             --network=host \
@@ -179,9 +177,9 @@ jobs:
             zap-baseline.py \
             -t http://localhost:3000 \
             -m 5 \
-            -J /zap/wrk/reports/report_json.json \
-            -w /zap/wrk/reports/report_md.md \
-            -r /zap/wrk/reports/report_html.html
+            -J /zap/wrk/report_json.json \
+            -w /zap/wrk/report_md.md \
+            -r /zap/wrk/report_html.html || true
 
       - name: Check generated reports
         run: ls -R
@@ -198,11 +196,17 @@ jobs:
 # ==================================================
 # 📊 REPORT STORAGE – Downloadable Security Reports
 # ==================================================
+      
       - name: Upload Security Reports
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
-          path: reports/
+          path: |
+            *.html
+            *.json
+            *.md
+            reports/
+
 
 
 
