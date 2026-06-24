@@ -111,11 +111,6 @@ jobs:
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v4
 
-        
-      # ✅ Remove broken JAVA_HOME (IMPORTANT FIX)
-      - name: Clear JAVA_HOME for Docker
-        run: echo "JAVA_HOME=" >> $GITHUB_ENV
-
 
       # =========================
       # ✅ DEPENDENCY SCAN
@@ -135,8 +130,6 @@ jobs:
           format: "HTML"
           out: "reports"
           args: "--failOnCVSS 7 --noupdate"
-        env:
-          JAVA_HOME: ""
 
 
       # =========================
