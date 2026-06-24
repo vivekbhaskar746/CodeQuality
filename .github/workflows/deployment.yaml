@@ -168,6 +168,7 @@ jobs:
 # ==================================================
 # 🔐 DAST – OWASP ZAP (Runtime Security Scan)
 # ==================================================
+      
       - name: Run OWASP ZAP Scan (CLI)
         run: |
           docker run --rm \
@@ -182,7 +183,14 @@ jobs:
             -r /zap/wrk/report_html.html || true
 
       - name: Check generated reports
-        run: ls -R
+        run: |
+            echo "==== ROOT FILES ===="
+            ls -la
+            echo "==== REPORT FILES ===="
+            ls -la report* || true
+            echo "==== REPORTS FOLDER ===="
+            ls -la reports || true
+
 
       
 
