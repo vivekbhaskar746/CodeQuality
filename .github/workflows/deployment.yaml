@@ -135,21 +135,21 @@ jobs:
       #     args: "--failOnCVSS 7 --noupdate"
 
 
-     # =========================
-      # ✅ RUN BACKEND
-      # =========================
-      - name: Start Backend
-        run: |
-          cd backend
-          nohup mvn spring-boot:run > backend.log 2>&1 &
-          sleep 30
+    #  # =========================
+    #   # ✅ RUN BACKEND
+    #   # =========================
+    #   - name: Start Backend
+    #     run: |
+    #       cd backend
+    #       nohup mvn spring-boot:run > backend.log 2>&1 &
+    #       sleep 30
 
-      # =========================
-      # ✅ VERIFY BACKEND
-      # =========================
-      - name: Check Backend
-        run: |
-          curl -f http://localhost:8080 || (echo "Backend not running" && exit 1)
+    #   # =========================
+    #   # ✅ VERIFY BACKEND
+    #   # =========================
+    #   - name: Check Backend
+    #     run: |
+    #       curl -f http://localhost:8080 || (echo "Backend not running" && exit 1)
 
       # =========================
       # ✅ RUN FRONTEND
