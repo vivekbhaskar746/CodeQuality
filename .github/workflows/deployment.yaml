@@ -77,7 +77,7 @@ jobs:
       # ✅ SECRET SCANNING (GITLEAKS)
       # =========================
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v4
         with:
           args: detect --redact
 
@@ -91,7 +91,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java,javascript
 
@@ -109,7 +109,7 @@ jobs:
           npm run build
 
       - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
         
       # ✅ Remove broken JAVA_HOME (IMPORTANT FIX)
@@ -128,7 +128,7 @@ jobs:
       # ✅ Dependency Check (FINAL FIX)
       
       - name: Run Dependency Check
-        uses: dependency-check/Dependency-Check_Action@v3
+        uses: dependency-check/Dependency-Check_Action@v4
         with:
           project: "my-app"
           path: "."
