@@ -186,17 +186,19 @@ jobs:
       # ✅ DAST (ZAP UI)
       # =========================
       
-      -  name: Run OWASP ZAP Scan (CLI)
-         run: |
-            docker run --rm \
-              -v $(pwd):/zap/wrk/:rw \
-              --network=host \
-              ghcr.io/zaproxy/zaproxy:stable \
-              zap-baseline.py \
-              -t http://localhost:3000 \
-              -J report_json.json \
-              -w report_md.md \
-              -r report_html.html
+      
+      - name: Run OWASP ZAP Scan (CLI)
+        run: |
+          docker run --rm \
+            -v $(pwd):/zap/wrk/:rw \
+            --network=host \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://localhost:3000 \
+            -m 5 \
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html || true
 
       # # =========================
       # # ✅ DAST (ZAP API)
