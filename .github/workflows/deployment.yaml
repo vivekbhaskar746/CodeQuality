@@ -185,14 +185,18 @@ jobs:
       # =========================
       # ✅ DAST (ZAP UI)
       # =========================
-      - name: Run OWASP ZAP Scan (UI)
-        uses: zaproxy/action-baseline@v0.10.0
-        with:
-          target: "http://localhost:3000"
-          fail_action: false
-          cmd_options: -z "-config api.disablekey=true"
-          allow_issue_writing: true
-          fail_on_error: false
+      
+      -  name: Run OWASP ZAP Scan (CLI)
+         run: |
+            docker run --rm \
+              -v $(pwd):/zap/wrk/:rw \
+              --network=host \
+              ghcr.io/zaproxy/zaproxy:stable \
+              zap-baseline.py \
+              -t http://localhost:3000 \
+              -J report_json.json \
+              -w report_md.md \
+              -r report_html.html
 
       # # =========================
       # # ✅ DAST (ZAP API)
