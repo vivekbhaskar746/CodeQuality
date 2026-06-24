@@ -4,64 +4,62 @@ on:
   push:
     branches: ["main"]
 
-
+# ✅ Global permissions (required for issues + security scans)
 permissions:
   contents: read
-  issues: write 
-
+  issues: write
 
 jobs:
 
-# =========================
-# ✅ BUILD STAGE
-# =========================
+# ==================================================
+# 🏗️ BUILD STAGE – Compile & Package Application
+# ==================================================
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ Step 1: Checkout repository code
       - name: Checkout Code
-        uses: actions/checkout@v5   # ✅ UPDATED (v4 → v5)
+        uses: actions/checkout@v5
 
-      # ✅ OPTIONAL (recommended for stability)
-      - name: Setup Node
+      # ✅ Step 2: Setup Node (for frontend build)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'   # ✅ ADDED (locks Node version for npm)
+          node-version: '20'
 
-      # ---------- FRONTEND ----------
-      - name: Install Frontend Dependencies
+      # ✅ Step 3: Build Frontend
+      - name: Install & Build Frontend
         run: |
           cd frontend
           npm install
-
-      - name: Build Frontend
-        run: |
-          cd frontend
           npm run build
 
-      # ---------- BACKEND ----------
+      # ✅ Step 4: Setup Java (for backend build)
       - name: Setup Java
-        uses: actions/setup-java@v5   # ✅ UPDATED (v4 → v5)
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # ✅ Step 5: Build Backend
       - name: Build Backend
         run: |
           cd backend
           mvn clean install -DskipTests
 
+      # ✅ Step 6: Upload build artifacts for next stage reuse
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v5   # ✅ UPDATED (v4 → v5)
+        uses: actions/upload-artifact@v5
         with:
           name: app-build
           path: .
 
-# =========================
-# ✅ SECURITY STAGE
-# =========================
+# ==================================================
+# 🔐 SECURITY STAGE – DevSecOps Scanning Layer
+# ==================================================
   security:
-    name: Security & Compliance  
+    name: Security & Compliance
     runs-on: ubuntu-latest
     needs: build
 
@@ -71,28 +69,29 @@ jobs:
       issues: write
 
     steps:
+      # ✅ Step 1: Checkout code
       - name: Checkout Code
-        uses: actions/checkout@v5   # ✅ UPDATED (v4 → v5)
+        uses: actions/checkout@v5
 
-      # ✅ OPTIONAL (recommended)
-      - name: Setup Node
+      # ✅ Step 2: Setup Node (for any frontend analysis)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'   # ✅ ADDED
+          node-version: '20'
 
-      # =========================
-      # ✅ SECRET SCANNING (GITLEAKS)
-      # =========================
-      - name: Run Gitleaks
+# ==================================================
+# 🔑 SECRET SCANNING – Detect hardcoded secrets
+# ==================================================
+      - name: Run Gitleaks (Secret Scan)
         uses: gitleaks/gitleaks-action@v2
         with:
           args: detect --redact
 
-      # =========================
-      # ✅ SAST (CODEQL - Java + JS)
-      # =========================
-      - name: Setup Java
-        uses: actions/setup-java@v5   # ✅ UPDATED (v4 → v5)
+# ==================================================
+# 🔍 SAST – Static Code Analysis (CodeQL)
+# ==================================================
+      - name: Setup Java for CodeQL
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -102,14 +101,13 @@ jobs:
         with:
           languages: java,javascript
 
-      # Build backend for CodeQL
-      - name: Build Backend
+      # ✅ Build required for accurate analysis
+      - name: Build Backend (CodeQL)
         run: |
           cd backend
           mvn clean install -DskipTests
 
-      # Build frontend (helps JS analysis)
-      - name: Build Frontend
+      - name: Build Frontend (CodeQL)
         run: |
           cd frontend
           npm install
@@ -118,49 +116,40 @@ jobs:
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v4
 
+# ==================================================
+# 📦 OPTIONAL – DEPENDENCY SCANNING (Currently Disabled)
+# ==================================================
 
-      # =========================
-      # ✅ DEPENDENCY SCAN
-      # ========================
+      - name: Run Dependency Check (CLI)
+        run: |
+          wget https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+          unzip dependency-check-9.0.9-release.zip
 
-      # ✅ Verify Java (optional but helpful)
-      # - name: Verify Java
+          ./dependency-check/bin/dependency-check.sh \
+            --project "backend" \
+            --scan "./backend" \
+            --format ALL \
+            --out "./reports" \
+            --failOnCVSS 7 || true
+
+
+# ==================================================
+# 🚀 APPLICATION STARTUP (FOR DAST SCAN)
+# ==================================================
+
+      # 🔸 OPTIONAL: Backend startup (enable when DB configured)
+      # - name: Start Backend
       #   run: |
-      #     echo "JAVA_HOME=$JAVA_HOME"
-      #     java -version
-      #     which java
+      #     cd backend
+      #     nohup mvn spring-boot:run > backend.log 2>&1 &
+      #     sleep 30
 
-      # # ✅ Dependency Check (FINAL FIX)
+      # - name: Verify Backend
+      #   run: |
+      #     curl -f http://localhost:8080 || (echo "Backend not running" && exit 1)
       
-      # - name: Run Dependency Check
-      #   uses: dependency-check/Dependency-Check_Action@1.1.0
-      #   with:
-      #     project: "backend"
-      #     path: "./backend"
-      #     format: "HTML"
-      #     out: "reports"
-      #     args: "--failOnCVSS 7 --noupdate"
 
-
-    #  # =========================
-    #   # ✅ RUN BACKEND
-    #   # =========================
-    #   - name: Start Backend
-    #     run: |
-    #       cd backend
-    #       nohup mvn spring-boot:run > backend.log 2>&1 &
-    #       sleep 30
-
-    #   # =========================
-    #   # ✅ VERIFY BACKEND
-    #   # =========================
-    #   - name: Check Backend
-    #     run: |
-    #       curl -f http://localhost:8080 || (echo "Backend not running" && exit 1)
-
-      # =========================
-      # ✅ RUN FRONTEND
-      # =========================
+      # ✅ Start Frontend (required for ZAP runtime scan)
       - name: Start Frontend
         run: |
           cd frontend
@@ -168,25 +157,14 @@ jobs:
           nohup npm start -- --port 3000 > frontend.log 2>&1 &
           sleep 40
 
-      # =========================
-      # ✅ VERIFY FRONTEND
-      # =========================
-      - name: Check Frontend
+      # ✅ Verify frontend is accessible
+      - name: Verify Frontend
         run: |
           curl -f http://localhost:3000 || (echo "Frontend not running" && exit 1)
 
-      # =========================
-      # ✅ FIX PERMISSIONS (CRITICAL ✅)
-      # =========================
-      - name: Fix workspace permission
-        run: |
-          chmod -R 777 $GITHUB_WORKSPACE
-
-      # =========================
-      # ✅ DAST (ZAP UI)
-      # =========================
-      
-      
+# ==================================================
+# 🔐 DAST – OWASP ZAP (Runtime Security Scan)
+# ==================================================
       - name: Run OWASP ZAP Scan (CLI)
         run: |
           docker run --rm \
@@ -200,20 +178,16 @@ jobs:
             -w report_md.md \
             -r report_html.html || true
 
-      # # =========================
-      # # ✅ DAST (ZAP API)
-      # # =========================
+      # 🔸 OPTIONAL: API security scan
       # - name: Run OWASP ZAP Scan (API)
       #   uses: zaproxy/action-baseline@v0.10.0
       #   with:
       #     target: "http://localhost:8080"
       #     fail_action: false
-      #     cmd_options: "-z '-config api.disablekey=true'"
-    
 
-    # =========================
-      # ✅ Upload All Security Reports
-      # =========================
+# ==================================================
+# 📊 REPORT STORAGE – Downloadable Security Reports
+# ==================================================
       - name: Upload Security Reports
         uses: actions/upload-artifact@v4
         with:
@@ -223,3 +197,252 @@ jobs:
             *.json
             *.md
             reports/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# name: CI/CD Pipeline with Full Security Scanning
+
+# on:
+#   push:
+#     branches: ["main"]
+
+
+# permissions:
+#   contents: read
+#   issues: write 
+
+
+# jobs:
+
+# # =========================
+# # ✅ BUILD STAGE
+# # =========================
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v5   
+
+#       # ✅ OPTIONAL (recommended for stability)
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'  
+
+#       # ---------- FRONTEND ----------
+#       - name: Install Frontend Dependencies
+#         run: |
+#           cd frontend
+#           npm install
+
+#       - name: Build Frontend
+#         run: |
+#           cd frontend
+#           npm run build
+
+#       # ---------- BACKEND ----------
+#       - name: Setup Java
+#         uses: actions/setup-java@v5   
+#         with:
+#           java-version: '17'
+#           distribution: 'temurin'
+
+#       - name: Build Backend
+#         run: |
+#           cd backend
+#           mvn clean install -DskipTests
+
+#       - name: Upload Build Artifacts
+#         uses: actions/upload-artifact@v5   
+#         with:
+#           name: app-build
+#           path: .
+
+# # =========================
+# # ✅ SECURITY STAGE
+# # =========================
+#   security:
+#     name: Security & Compliance  
+#     runs-on: ubuntu-latest
+#     needs: build
+
+#     permissions:
+#       contents: read
+#       security-events: write
+#       issues: write
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v5   
+
+#       # ✅ OPTIONAL (recommended)
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'   # ✅ ADDED
+
+#       # =========================
+#       # ✅ SECRET SCANNING (GITLEAKS)
+#       # =========================
+#       - name: Run Gitleaks
+#         uses: gitleaks/gitleaks-action@v2
+#         with:
+#           args: detect --redact
+
+#       # =========================
+#       # ✅ SAST (CODEQL - Java + JS)
+#       # =========================
+#       - name: Setup Java
+#         uses: actions/setup-java@v5   
+#         with:
+#           java-version: '17'
+#           distribution: 'temurin'
+
+#       - name: Initialize CodeQL
+#         uses: github/codeql-action/init@v4
+#         with:
+#           languages: java,javascript
+
+#       # Build backend for CodeQL
+#       - name: Build Backend
+#         run: |
+#           cd backend
+#           mvn clean install -DskipTests
+
+#       # Build frontend (helps JS analysis)
+#       - name: Build Frontend
+#         run: |
+#           cd frontend
+#           npm install
+#           npm run build
+
+#       - name: Run CodeQL Analysis
+#         uses: github/codeql-action/analyze@v4
+
+
+#       # =========================
+#       # ✅ DEPENDENCY SCAN
+#       # ========================
+
+#       # ✅ Verify Java (optional but helpful)
+#       # - name: Verify Java
+#       #   run: |
+#       #     echo "JAVA_HOME=$JAVA_HOME"
+#       #     java -version
+#       #     which java
+
+#       # # ✅ Dependency Check (FINAL FIX)
+      
+#       # - name: Run Dependency Check
+#       #   uses: dependency-check/Dependency-Check_Action@1.1.0
+#       #   with:
+#       #     project: "backend"
+#       #     path: "./backend"
+#       #     format: "HTML"
+#       #     out: "reports"
+#       #     args: "--failOnCVSS 7 --noupdate"
+
+
+#     #  # =========================
+#     #   # ✅ RUN BACKEND
+#     #   # =========================
+#     #   - name: Start Backend
+#     #     run: |
+#     #       cd backend
+#     #       nohup mvn spring-boot:run > backend.log 2>&1 &
+#     #       sleep 30
+
+#     #   # =========================
+#     #   # ✅ VERIFY BACKEND
+#     #   # =========================
+#     #   - name: Check Backend
+#     #     run: |
+#     #       curl -f http://localhost:8080 || (echo "Backend not running" && exit 1)
+
+#       # =========================
+#       # ✅ RUN FRONTEND
+#       # =========================
+#       - name: Start Frontend
+#         run: |
+#           cd frontend
+#           npm install
+#           nohup npm start -- --port 3000 > frontend.log 2>&1 &
+#           sleep 40
+
+#       # =========================
+#       # ✅ VERIFY FRONTEND
+#       # =========================
+#       - name: Check Frontend
+#         run: |
+#           curl -f http://localhost:3000 || (echo "Frontend not running" && exit 1)
+
+#       # =========================
+#       # ✅ FIX PERMISSIONS (CRITICAL ✅)
+#       # =========================
+#       - name: Fix workspace permission
+#         run: |
+#           chmod -R 777 $GITHUB_WORKSPACE
+
+#       # =========================
+#       # ✅ DAST (ZAP UI)
+#       # =========================
+      
+      
+#       - name: Run OWASP ZAP Scan (CLI)
+#         run: |
+#           docker run --rm \
+#             -v $(pwd):/zap/wrk/:rw \
+#             --network=host \
+#             ghcr.io/zaproxy/zaproxy:stable \
+#             zap-baseline.py \
+#             -t http://localhost:3000 \
+#             -m 5 \
+#             -J report_json.json \
+#             -w report_md.md \
+#             -r report_html.html || true
+
+#       # # =========================
+#       # # ✅ DAST (ZAP API)
+#       # # =========================
+#       # - name: Run OWASP ZAP Scan (API)
+#       #   uses: zaproxy/action-baseline@v0.10.0
+#       #   with:
+#       #     target: "http://localhost:8080"
+#       #     fail_action: false
+#       #     cmd_options: "-z '-config api.disablekey=true'"
+    
+
+#     # =========================
+#       # ✅ Upload All Security Reports
+#       # =========================
+#       - name: Upload Security Reports
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: security-reports
+#           path: |
+#             *.html
+#             *.json
+#             *.md
+#             reports/
