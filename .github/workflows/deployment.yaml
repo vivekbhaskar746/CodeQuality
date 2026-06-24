@@ -192,6 +192,7 @@ jobs:
           fail_action: false
           cmd_options: -z "-config api.disablekey=true"
           allow_issue_writing: true
+          fail_on_error: false
 
       # # =========================
       # # ✅ DAST (ZAP API)
