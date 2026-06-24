@@ -14,7 +14,13 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5   # ✅ UPDATED (v4 → v5)
+
+      # ✅ OPTIONAL (recommended for stability)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'   # ✅ ADDED (locks Node version for npm)
 
       # ---------- FRONTEND ----------
       - name: Install Frontend Dependencies
@@ -29,7 +35,7 @@ jobs:
 
       # ---------- BACKEND ----------
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5   # ✅ UPDATED (v4 → v5)
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -40,7 +46,7 @@ jobs:
           mvn clean install -DskipTests
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5   # ✅ UPDATED (v4 → v5)
         with:
           name: app-build
           path: .
@@ -49,7 +55,7 @@ jobs:
 # ✅ SECURITY STAGE
 # =========================
   security:
-    name: Security & Compliance
+    name: Security & Compliance   # ✅ FIXED (&amp; → &)
     runs-on: ubuntu-latest
     needs: build
 
@@ -59,7 +65,13 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5   # ✅ UPDATED (v4 → v5)
+
+      # ✅ OPTIONAL (recommended)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'   # ✅ ADDED
 
       # =========================
       # ✅ SECRET SCANNING (GITLEAKS)
@@ -73,7 +85,7 @@ jobs:
       # ✅ SAST (CODEQL - Java + JS)
       # =========================
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5   # ✅ UPDATED (v4 → v5)
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -111,22 +123,22 @@ jobs:
           failOnCVSS: 7
 
       # =========================
-      # ✅ RUN BACKEND (for API testing)
+      # ✅ RUN BACKEND (IMPROVED)
       # =========================
       - name: Start Backend
         run: |
           cd backend
-          mvn spring-boot:run &
+          nohup mvn spring-boot:run > backend.log 2>&1 &   # ✅ UPDATED (better background handling)
           sleep 25
 
       # =========================
-      # ✅ RUN FRONTEND (PORT 80 FIX)
+      # ✅ RUN FRONTEND (IMPROVED)
       # =========================
-      - name: Start Frontend (port 3000 safer)
+      - name: Start Frontend
         run: |
           cd frontend
           npm install
-          PORT=3000 npm start &
+          nohup PORT=3000 npm start > frontend.log 2>&1 &   # ✅ UPDATED
           sleep 30
 
       # =========================
@@ -142,173 +154,15 @@ jobs:
         uses: zaproxy/action-baseline@v0.10.0
         with:
           target: "http://localhost:8080"
-          fail_action: false   # optional (warnings only)
+          fail_action: false
 
       # =========================
       # ✅ UPLOAD REPORTS
       # =========================
       - name: Upload Security Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5   # ✅ UPDATED (v4 → v5)
         with:
           name: security-reports
           path: |
             report_html.html
             reports/
-
-
-
-
-
-
-
-
-
-
-# name: CI/CD Pipeline with Full Security Scanning
- 
-# on:
-#   push:
-#     branches: ["main"]
-#   # pull_request:
- 
-# jobs:
- 
-# # =========================
-# # ✅ BUILD STAGE
-# # =========================
-#   build:
-#     runs-on: ubuntu-latest
- 
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
- 
-#       - name: Install Dependencies
-#         run: npm install
- 
-#       - name: Build Application
-#         run: npm run build
- 
-#       - name: Upload Build Artifact
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: app-build
-#           path: .
- 
-# # =========================
-# # ✅ TEST STAGE
-# # =========================
-#   # test:
-#   #   runs-on: ubuntu-latest
-#   #   needs: build
- 
-#   #   steps:
-#   #     - uses: actions/checkout@v4
- 
-#   #     - name: Run Unit Tests
-#   #       run: npm test
- 
-# # =========================
-# # ✅ SECURITY STAGE
-# # =========================
-#   security:
-#     name: Security & Compliance
-#     runs-on: ubuntu-latest
-#     # needs: test
- 
-#     permissions:
-#       security-events: write
- 
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
- 
-#       # =========================
-#       # ✅ SECRET SCANNING
-#       # Covers:
-#       # Hardcoded secrets, passwords, keys
-#       # =========================
-#       - name: Run Gitleaks
-#         uses: gitleaks/gitleaks-action@v2
-#         with:
-#           args: detect --redact
- 
-#       # =========================
-#       # ✅ SAST (CodeQL)
-#       # Covers:
-#       # SQL Injection, XSS, command injection,
-#       # weak encryption, improper hashing,
-#       # insecure API usage, buffer overflow
-#       # =========================
-
-#       - name: Initialize CodeQL
-#         uses: github/codeql-action/init@v3
-#         with:
-#           languages: java   # change based on your project
-
-#       # Agar build required hai
-#       - name: Build Project
-#         run: mvn clean install -DskipTests
-
-#       - name: Autobuild (optional fallback)
-#         uses: github/codeql-action/autobuild@v3
-
-#       - name: Perform CodeQL Analysis
-#         uses: github/codeql-action/analyze@v3
-      
- 
-#       # =========================
-#       # ✅ DEPENDENCY SCAN
-#       # Covers:
-#       # Vulnerable libraries (CVE)
-#       # =========================
-#       - name: Run Dependency Check
-#         uses: dependency-check/Dependency-Check_Action@main
-#         with:
-#           project: "my-app"
-#           path: "."
-#           format: "HTML"
-#           failOnCVSS: 7
- 
-#       # =========================
-#       # ✅ START APPLICATION (for DAST)
-#       # =========================
-#       - name: Start Application
-#         run: |
-#           npm install
-#           npm start &
-#           sleep 25
- 
-#       # =========================
-#       # ✅ DAST (OWASP ZAP)
-#       # Covers:
-#       # XSS, Insecure API, missing auth,
-#       # RBAC violations, headers, runtime issues
-#       # =========================
-#       - name: Run OWASP ZAP Scan
-#         uses: zaproxy/action-baseline@v0.10.0
-#         with:
-#           target: "http://localhost:3000"
-#           fail_action: true
- 
-#       # =========================
-#       # ✅ Upload Reports
-#       # =========================
-#       - name: Upload Security Reports
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: security-reports
-#           path: |
-#             report_html.html
-#             reports/
- 
-# # =========================
-# # ✅ DEPLOY STAGE
-# # =========================
-#   # deploy:
-#   #   runs-on: ubuntu-latest
-#   #   needs: security
- 
-#   #   steps:
-#   #     - name: Deploy Application
-#   #       run: echo "Deploying application securely..."
