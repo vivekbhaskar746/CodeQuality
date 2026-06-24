@@ -4,6 +4,12 @@ on:
   push:
     branches: ["main"]
 
+
+permissions:
+  contents: read
+  issues: write 
+
+
 jobs:
 
 # =========================
@@ -184,6 +190,7 @@ jobs:
           target: "http://localhost:3000"
           fail_action: false
           cmd_options: -z "-config api.disablekey=true"
+          allow_issue_writing: true
 
       # # =========================
       # # ✅ DAST (ZAP API)
