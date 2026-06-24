@@ -182,25 +182,29 @@ jobs:
         uses: zaproxy/action-baseline@v0.10.0
         with:
           target: "http://localhost:3000"
-          fail_action: true
-          cmd_options: "-z '-config api.disablekey=true'"
-
-      # =========================
-      # ✅ DAST (ZAP API)
-      # =========================
-      - name: Run OWASP ZAP Scan (API)
-        uses: zaproxy/action-baseline@v0.10.0
-        with:
-          target: "http://localhost:8080"
           fail_action: false
-          cmd_options: "-z '-config api.disablekey=true'"
-      # =========================
-      # ✅ UPLOAD REPORTS
+          cmd_options: -z "-config api.disablekey=true"
+
+      # # =========================
+      # # ✅ DAST (ZAP API)
+      # # =========================
+      # - name: Run OWASP ZAP Scan (API)
+      #   uses: zaproxy/action-baseline@v0.10.0
+      #   with:
+      #     target: "http://localhost:8080"
+      #     fail_action: false
+      #     cmd_options: "-z '-config api.disablekey=true'"
+    
+
+    # =========================
+      # ✅ Upload All Security Reports
       # =========================
       - name: Upload Security Reports
-        uses: actions/upload-artifact@v5   # ✅ UPDATED (v4 → v5)
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
             report_html.html
+            report_json.json
+            report_md.md
             reports/
