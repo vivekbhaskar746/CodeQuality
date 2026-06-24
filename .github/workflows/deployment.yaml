@@ -116,7 +116,7 @@ jobs:
       # =========================
       # ✅ Fix JAVA_HOME (required for Docker-based action)
       - name: Fix JAVA_HOME
-        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV   # ✅ ADDED
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV 
 
       # ✅ Verify Java (optional but helpful)
       - name: Verify Java
@@ -131,7 +131,7 @@ jobs:
           format: "HTML"
           out: "reports"
           args: >
-            --failOnCVSS 7   # ✅ FIX: moved from incorrect input → args
+            --failOnCVSS 7 
 
 
       # =========================
