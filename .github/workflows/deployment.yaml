@@ -128,7 +128,7 @@ jobs:
       # ✅ Dependency Check (FINAL FIX)
       
       - name: Run Dependency Check
-        uses: dependency-check/Dependency-Check_Action@v3
+        uses: dependency-check/Dependency-check_action@v3.1.0
         with:
           project: "my-app"
           path: "."
