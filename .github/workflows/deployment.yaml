@@ -186,6 +186,7 @@ jobs:
             zap-baseline.py \
             -t http://localhost:3000 \
             -m 5 \
+            -I \
             -J report_json.json \
             -w report_md.md \
             -r report_html.html 
