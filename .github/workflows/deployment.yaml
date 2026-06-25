@@ -143,9 +143,9 @@ jobs:
         run: |
             echo "API Key Length: ${#NVD_API_KEY}"  
 
-      - name: Show Dependencycheck help
-        run: |
-          ./dependency-check/bin/dependency-check.sh --advancedHelp | grep -i nvd
+      # - name: Show Dependencycheck help
+      #   run: |
+      #     ./dependency-check/bin/dependency-check.sh --advancedHelp | grep -i nvd
 
 
 
