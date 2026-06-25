@@ -178,9 +178,9 @@ jobs:
             zap-baseline.py \
             -t http://localhost:3000 \
             -m 5 \
-            -J /zap/wrk/report_json.json \
-            -w /zap/wrk/report_md.md \
-            -r /zap/wrk/report_html.html 
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html 
 
       - name: Debug ZAP Output
         run: |
@@ -227,7 +227,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
-          path: .
+          path: |
+               report_html.html
+               report_json.json
+               report_md.md
+              
             
 
 
