@@ -162,9 +162,10 @@ jobs:
                 --scan "./backend" \
                 --format ALL \
                 --out "./reports" \
-                --nvdApiKey "$NVD_API_KEY" \
+                --noupdate \
                 --failOnCVSS 7 || true
 
+#--nvdApiKey "$NVD_API_KEY" \
 
 
           
