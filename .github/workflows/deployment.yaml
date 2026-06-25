@@ -135,6 +135,19 @@ jobs:
 # 📦 OPTIONAL – DEPENDENCY SCANNING (Currently Disabled)
 # ==================================================
 
+
+      
+      - name: Verify API Key (masked)
+        run: |
+          if [ -z "$NVD_API_KEY" ]; then
+            echo "API key NOT set ❌"
+          else
+            echo "API key is set ✅"
+          fi
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+
+
       - name: Run Dependency Check (CLI)
         run: |
           wget https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
