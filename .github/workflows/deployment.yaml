@@ -180,7 +180,15 @@ jobs:
             -m 5 \
             -J /zap/wrk/report_json.json \
             -w /zap/wrk/report_md.md \
-            -r /zap/wrk/report_html.html || true
+            -r /zap/wrk/report_html.html 
+
+      - name: Debug ZAP Output
+        run: |
+            echo "------workspace files-------"
+            find . -type f | sort
+
+            echo "-----Reports Folder-----"
+            ls -la reports || true      
 
       - name: Check generated reports
         run: |
@@ -204,16 +212,23 @@ jobs:
 # ==================================================
 # 📊 REPORT STORAGE – Downloadable Security Reports
 # ==================================================
+      - name: Debug reports
+        run: |
+           echo "------current dir-----"
+           pwd
+           echo "-----All Files-----"
+           find . -type f 
+           echo "------Report Files------"
+           find . -name "*.html"
+           find . -name "*.json"
+           find . -name "*.md"
       
       - name: Upload Security Reports
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
-          path: |
-            *.html
-            *.json
-            *.md
-            reports/
+          path: .
+            
 
 
 
