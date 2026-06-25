@@ -138,14 +138,10 @@ jobs:
 
       
       - name: Verify API Key (masked)
-        run: |
-          if [ -z "$NVD_API_KEY" ]; then
-            echo "API key NOT set ❌"
-          else
-            echo "API key is set ✅"
-          fi
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run:
+          echo "API Key Length: ${#NVD_API_KEY}"  
 
 
       - name: Run Dependency Check (CLI)
