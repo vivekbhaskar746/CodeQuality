@@ -146,7 +146,7 @@ jobs:
                 --scan "./backend" \
                 --format ALL \
                 --out "./reports" \    
-                --nvdApiKey ${{ secrets.NVD_API_KEY }} \
+                --nvdApiKey "${{ secrets.NVD_API_KEY }}" \
                 --failOnCVSS 7 || true
 
 
