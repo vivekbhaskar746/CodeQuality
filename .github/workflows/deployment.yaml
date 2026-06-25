@@ -168,10 +168,18 @@ jobs:
 # ==================================================
 # 🔐 DAST – OWASP ZAP (Runtime Security Scan)
 # ==================================================
+
+      - name: check workspace permissions
+        run: |
+            pwd
+            ls -ld
+            ls -la
+            chmod -R 777 .
       
       - name: Run OWASP ZAP Scan (CLI)
         run: |
           docker run --rm \
+            -u root \
             -v $(pwd):/zap/wrk/:rw \
             --network=host \
             ghcr.io/zaproxy/zaproxy:stable \
