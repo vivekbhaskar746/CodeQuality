@@ -98,14 +98,23 @@ jobs:
       - name: Create Issues for Gitleaks findings
         if: always()
         run: |
+          echo "## 🔐 Gitleaks Result" >> $GITHUB_STEP_SUMMARY
+
           if [ -f gitleaks-report.json ]; then
             count=$(jq length gitleaks-report.json)
+
             if [ "$count" -gt 0 ]; then
+              echo "❌ Found $count secret leaks" >> $GITHUB_STEP_SUMMARY
+
               gh issue create \
                 --title "🚨 Gitleaks detected secrets" \
                 --body "Found $count potential secrets. Please check artifact." \
                 --label "security"
+            else
+              echo "✅ No secrets leaks found" >> $GITHUB_STEP_SUMMARY
             fi
+          else
+            echo "⚠️ Gitleaks report not found" >> $GITHUB_STEP_SUMMARY
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -193,15 +202,28 @@ jobs:
       - name: Create Issues for Dependency Scan
         if: always()
         run: |
+          echo "Checking dependency report..."
+
           if [ -f reports/dependency-check-report.json ]; then
-            vulnerabilities=$(jq '.dependencies[].vulnerabilities | select(. != null)' reports/dependency-check-report.json | wc -l)
+            echo "Report found ✅"
+
+            # Count vulnerabilities properly
+            vulnerabilities=$(jq '[.dependencies[].vulnerabilities[]?] | length' reports/dependency-check-report.json)
+
+            echo "Total vulnerabilities: $vulnerabilities"
 
             if [ "$vulnerabilities" -gt 0 ]; then
+              echo "Creating GitHub issue..."
+
               gh issue create \
                 --title "🚨 Dependency Vulnerabilities Found" \
-                --body "Found $vulnerabilities vulnerabilities via OWASP Dependency Check. See artifacts." \
+                --body "Found $vulnerabilities vulnerabilities via OWASP Dependency Check.\n\nPlease check the uploaded artifact for full report." \
                 --label "security"
+            else
+              echo "No vulnerabilities found ✅"
             fi
+          else
+            echo "Dependency report not found ❌"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
