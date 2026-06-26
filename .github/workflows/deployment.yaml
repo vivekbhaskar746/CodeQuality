@@ -85,10 +85,31 @@ jobs:
 # ==================================================
 # 🔑 SECRET SCANNING – Detect hardcoded secrets
 # ==================================================
+      
       - name: Run Gitleaks (Secret Scan)
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --redact
+        id: gitleaks
+        run: |
+          gitleaks detect \
+            --source . \
+            --report-format json \
+            --report-path gitleaks-report.json \
+            --redact || true
+
+      - name: Create Issues for Gitleaks findings
+        if: always()
+        run: |
+          if [ -f gitleaks-report.json ]; then
+            count=$(jq length gitleaks-report.json)
+            if [ "$count" -gt 0 ]; then
+              gh issue create \
+                --title "🚨 Gitleaks detected secrets" \
+                --body "Found $count potential secrets. Please check artifact." \
+                --label "security"
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
 
@@ -169,11 +190,22 @@ jobs:
 
 
           
-      - name: Upload Dependency Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-report
-          path: reports/
+      - name: Create Issues for Dependency Scan
+        if: always()
+        run: |
+          if [ -f reports/dependency-check-report.json ]; then
+            vulnerabilities=$(jq '.dependencies[].vulnerabilities | select(. != null)' reports/dependency-check-report.json | wc -l)
+
+            if [ "$vulnerabilities" -gt 0 ]; then
+              gh issue create \
+                --title "🚨 Dependency Vulnerabilities Found" \
+                --body "Found $vulnerabilities vulnerabilities via OWASP Dependency Check. See artifacts." \
+                --label "security"
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       
 
 
